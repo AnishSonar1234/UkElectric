@@ -49,3 +49,6 @@ frontend/dist-ssr/
 *.swo
 .DS_Store
 Thumbs.db
+
+# User text files & local notes
+METHODOLOGY.txt
