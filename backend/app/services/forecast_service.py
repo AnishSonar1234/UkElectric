@@ -1,28 +1,35 @@
+import asyncio
 from datetime import datetime, timedelta, timezone
-from typing import List, Dict, Any, Optional, Tuple
+from typing import List, Dict, Any, Optional
 import logging
 from dateutil import parser
 
-from app.core.config import settings
 from app.services.elexon_client import elexon_client
 from app.analytics.metrics import compute_all_metrics
 from app.schemas.models import (
     MatchedDeliveryPeriod,
     AccuracyMetrics,
     EvaluationResponse,
-    VintageItem,
-    VintagesResponse
+    VintageItem
 )
 
 logger = logging.getLogger(__name__)
 
 
 def parse_iso(ts_str: str) -> datetime:
-    """Parses ISO timestamp into timezone-aware UTC datetime."""
-    dt = parser.isoparse(ts_str)
-    if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
-    return dt.astimezone(timezone.utc)
+    """Fast ISO timestamp parser returning UTC-aware datetime."""
+    try:
+        if ts_str.endswith("Z"):
+            return datetime.fromisoformat(ts_str[:-1] + "+00:00")
+        dt = datetime.fromisoformat(ts_str)
+        if dt.tzinfo is None:
+            return dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(timezone.utc)
+    except (ValueError, TypeError):
+        dt = parser.isoparse(ts_str)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(timezone.utc)
 
 
 def compute_lead_time_hours(delivery_time_str: str, publish_time_str: str) -> float:
@@ -60,9 +67,8 @@ class ForecastService:
             if not st or not pt or gen is None:
                 continue
 
-            # Ensure delivery period matches target delivery date (YYYY-MM-DD)
-            st_dt = parse_iso(st)
-            if st_dt.strftime("%Y-%m-%d") != target_delivery_date:
+            # Fast check: delivery period matches target delivery date (YYYY-MM-DD)
+            if not st.startswith(target_delivery_date):
                 continue
 
             candidates_by_period.setdefault(st, []).append(rec)
@@ -141,12 +147,11 @@ class ForecastService:
         """
         Runs complete day-ahead forecast evaluation pipeline:
         1. Validates and sets dates (delivery_date = decision_date + 1 day by default).
-        2. Ingests actuals from FUELHH for delivery_date.
-        3. Ingests WINDFOR forecasts published in candidate window.
-        4. Applies cutoff filter and selects latest eligible forecast vintage for each delivery period.
-        5. Matches forecasts with actuals on exact delivery startTime.
-        6. Computes statistical metrics (MAE, RMSE, Bias, MAPE).
-        7. Generates summary insight and structured evaluation report.
+        2. Concurrently ingests actuals from FUELHH and WINDFOR forecasts.
+        3. Applies cutoff filter and selects latest eligible forecast vintage for each delivery period.
+        4. Matches forecasts with actuals on exact delivery startTime.
+        5. Computes statistical metrics (MAE, RMSE, Bias, MAPE).
+        6. Generates summary insight and structured evaluation report.
         """
         dec_dt = datetime.strptime(decision_date, "%Y-%m-%d").date()
         if delivery_date is None:
@@ -155,23 +160,22 @@ class ForecastService:
         else:
             delivery_date_str = delivery_date
 
-        # Format decision cutoff
         decision_cutoff_iso = f"{decision_date}T{cutoff_time}Z"
         
-        # Window for WINDFOR publication:
-        # Day-ahead forecasts for delivery on D+1 are typically published on D or D-1
+        # Window for WINDFOR publication (Day D or D-1)
         pub_from = f"{(dec_dt - timedelta(days=1)).strftime('%Y-%m-%d')}T00:00:00Z"
         pub_to = f"{decision_date}T23:59:59Z"
 
-        # Ingest both datasets concurrently or sequentially via client
-        actual_records = await elexon_client.fetch_actual_generation(
-            settlement_date_from=delivery_date_str,
-            settlement_date_to=delivery_date_str
-        )
-
-        forecast_records = await elexon_client.fetch_wind_forecasts(
-            publish_datetime_from=pub_from,
-            publish_datetime_to=pub_to
+        # Concurrently fetch both actuals and forecasts for optimal latency
+        actual_records, forecast_records = await asyncio.gather(
+            elexon_client.fetch_actual_generation(
+                settlement_date_from=delivery_date_str,
+                settlement_date_to=delivery_date_str
+            ),
+            elexon_client.fetch_wind_forecasts(
+                publish_datetime_from=pub_from,
+                publish_datetime_to=pub_to
+            )
         )
 
         # Select latest eligible forecast per delivery period
@@ -182,10 +186,9 @@ class ForecastService:
         )
 
         # Build lookup for actuals by normalized startTime ISO
-        actuals_by_start: Dict[str, Dict[str, Any]] = {}
-        for act in actual_records:
-            st = act["startTime"]
-            actuals_by_start[st] = act
+        actuals_by_start: Dict[str, Dict[str, Any]] = {
+            act["startTime"]: act for act in actual_records
+        }
 
         matched_periods: List[MatchedDeliveryPeriod] = []
         forecast_values: List[float] = []
