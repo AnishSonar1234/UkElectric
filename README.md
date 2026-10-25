@@ -8,6 +8,10 @@
 [![Python](https://img.shields.io/badge/Python-3.12%20%7C%203.13-3776AB.svg?logo=python&logoColor=white)](https://www.python.org)
 [![Docker](https://img.shields.io/badge/Container-Docker%20Compose-2496ED.svg?logo=docker&logoColor=white)](https://www.docker.com)
 [![Data Source](https://img.shields.io/badge/Data%20Source-Elexon%20BMRS%20Insights-FF6F00.svg)](https://data.elexon.co.uk)
+[![Deployed on Vercel](https://img.shields.io/badge/Live%20App-Vercel-black?logo=vercel&logoColor=white)](https://gy72g.vercel.app/)
+
+> 🌐 **Live Web Application (Vercel):** **[https://gy72g.vercel.app/](https://gy72g.vercel.app/)**  
+> Access the deployed, fully interactive WindSight Analytics platform directly in your browser.
 
 ---
 
@@ -31,7 +35,24 @@ Day-ahead wholesale procurement bids must be placed before auction gate closures
 
 ---
 
-## 2. Visual Interface & Screenshots
+## 2. Link to the Vercel / Heroku Application
+
+The production application is live and accessible online:
+
+- 🔗 **Live Vercel Application:** **[https://gy72g.vercel.app/](https://gy72g.vercel.app/)**
+- **Hosting Platform:** Vercel Edge Network
+- **Status:** Active & fully operational
+- **Key Features Available Online:**
+  - Day-Ahead Procurement Executive Brief and real-time KPI metrics (MAE, RMSE, Bias, MAPE)
+  - Interactive Date and Gate Closure Cutoff selector (09:00, 11:00, 12:00, 15:30, 23:59 UTC)
+  - Dual-series Wind Generation curve (Selected WINDFOR forecast vs. FUELHH actual outturn)
+  - Forecast Error Distribution bar chart with distinct over/underforecasting visualization
+  - Audit-grade Vintage Inspection modal detailing all published candidate forecast runs
+  - Embedded market rules, formulas, and methodology documentation
+
+---
+
+## 3. Visual Interface & Screenshots
 
 ### Overview Dashboard
 Displays the Day-Ahead Procurement Executive Brief, real-time KPI metrics (MAE, RMSE, Bias, MAPE), national wind generation curves, and delivery period snapshots.
@@ -61,7 +82,7 @@ In-depth documentation of Elexon streams, gate closure assumptions, and mathemat
 
 ---
 
-## 3. System Architecture
+## 4. System Architecture
 
 ```mermaid
 flowchart TD
@@ -106,7 +127,7 @@ flowchart TD
 
 ---
 
-## 4. Official Elexon Data Sources
+## 5. Official Elexon Data Sources
 
 WindSight Analytics uses **only** official Elexon Insights Solution streams:
 
@@ -117,7 +138,7 @@ WindSight Analytics uses **only** official Elexon Insights Solution streams:
 
 ---
 
-## 5. Critical Business Logic: Historical Forecast Selection
+## 6. Critical Business Logic: Historical Forecast Selection
 
 ### Market Timing & Gate Closure
 - **Decision Date ($D-1$):** The date the power procurement decision is committed.
@@ -139,7 +160,7 @@ For each delivery period timestamp $t$:
 
 ---
 
-## 6. Statistical Metrics & Formulations
+## 7. Statistical Metrics & Formulations
 
 Let $F_i$ be forecast generation (MW), $A_i$ be actual generation (MW), and $N$ be the number of matched observations.
 
@@ -163,7 +184,7 @@ $$\text{MAPE} = \frac{1}{K} \sum_{i=1}^K \frac{|F_i - A_i|}{A_i} \times 100\%$$
 
 ---
 
-## 7. Data Engineering & Integrity Rules
+## 8. Data Engineering & Integrity Rules
 
 1. **Zero-Tolerance for Silent Substitution:** Missing actual or forecast data is never replaced with zero.
 2. **Exact Timestamp Alignment:** Elexon WINDFOR publishes hourly (`:00 UTC`), while FUELHH publishes half-hourly (`:00` and `:30`). Only exact `:00` matches are compared (24 matched periods/day). Intermediate `:30` actuals are left unmatched and accounted for in `unmatched_actual_count`.
@@ -171,11 +192,13 @@ $$\text{MAPE} = \frac{1}{K} \sum_{i=1}^K \frac{|F_i - A_i|}{A_i} \times 100\%$$
 
 ---
 
-## 8. Directory & File Structure
+## 9. Details of the Files and Directories Present
+
+Below is the complete repository structure followed by a detailed breakdown of each directory and file in the project:
 
 ```
 UkElectric/
-├── backend/
+├── backend/                        # FastAPI analytical core & business logic
 │   ├── app/
 │   │   ├── analytics/
 │   │   │   └── metrics.py          # MAE, RMSE, Bias, MAPE implementations
@@ -197,7 +220,7 @@ UkElectric/
 │   ├── Dockerfile                  # Python 3.12-slim production container
 │   ├── requirements.txt            # Pinned backend dependencies
 │   └── pytest.ini                  # Pytest configuration
-├── frontend/
+├── frontend/                       # React 19 + TypeScript + Vite SPA
 │   ├── src/
 │   │   ├── components/
 │   │   │   ├── ErrorChart.tsx      # Recharts error distribution bar chart
@@ -220,30 +243,83 @@ UkElectric/
 │   │   └── main.tsx                # React 19 entrypoint
 │   ├── Dockerfile                  # Multi-stage Node 22 build + Nginx container
 │   ├── nginx.conf                  # Nginx reverse proxy & SPA configuration
-│   ├── vercel.json                 # Vercel deployment configuration
+│   ├── vercel.json                 # Vercel deployment & rewrite configuration
 │   └── package.json                # Frontend dependencies (React 19, Recharts)
 ├── docs/
-│   └── screenshots/                # UI application screenshots
+│   └── screenshots/                # UI application screenshots for documentation
 ├── .dockerignore                   # Docker build exclusions
-├── .env.example                    # Non-secret environment configuration
+├── .env.example                    # Non-secret environment configuration template
 ├── .gitignore                      # Git exclusion rules
-├── docker-compose.yml              # Complete multi-service orchestration
-├── DEMO_SCRIPT.md                  # 10-minute demo video narration & actions
+├── docker-compose.yml              # Complete multi-service container orchestration
+├── start.bat                       # One-click Windows startup script for both services
+├── test.bat                        # One-click Windows script to execute automated tests
 └── README.md                       # Comprehensive project documentation
 ```
 
+### Detailed Directory & File Breakdown
+
+| Directory / File | Description & Purpose |
+|---|---|
+| **`backend/`** | The analytical backend service built with Python 3.12+ and FastAPI. |
+| `backend/app/main.py` | Application entry point: initializes FastAPI, configures CORS middleware for frontend access, and mounts API routes. |
+| `backend/app/analytics/metrics.py` | Contains mathematical implementations for MAE, RMSE, Mean Forecast Bias, and MAPE (including the <100 MW denominator protection). |
+| `backend/app/api/routes.py` | FastAPI REST route definitions (`/api/evaluation`, `/api/accuracy`, `/api/forecasts`, `/api/actuals`, `/api/vintages`, `/api/methodology`, `/api/health`). |
+| `backend/app/core/config.py` | Configuration settings using Pydantic `BaseSettings` for environment variables, gate-closure defaults, and caching policies. |
+| `backend/app/schemas/models.py` | Strongly-typed Pydantic v2 schemas defining input query validation and JSON response structures. |
+| `backend/app/services/forecast_service.py` | Core business logic implementing deterministic vintage selection, lead-time calculations, and exact timestamp alignment. |
+| `backend/app/services/elexon_client.py` | Asynchronous HTTP client (using `httpx`) that streams official Elexon BMRS datasets (`FUELHH` and `WINDFOR`). |
+| `backend/app/services/cache_service.py` | Local disk caching layer that hashes API requests with SHA-256 to ensure sub-50ms repeat query responses for immutable data. |
+| `backend/tests/` | Deterministic unit test suites (`test_metrics.py`, `test_forecast_selection.py`, `test_api.py`) verifying numerical precision and cutoff boundaries. |
+| `backend/Dockerfile` | Production container specification using Python 3.12-slim. |
+| `backend/requirements.txt` | Explicitly pinned Python package dependencies (FastAPI, Uvicorn, Pandas, HTTPX, Pydantic, etc.). |
+| **`frontend/`** | The client-side single-page application built with React 19, TypeScript, and Vite. |
+| `frontend/src/App.tsx` | Root UI component managing global date filters, cutoff thresholds, tab navigation, and vintage inspection modal state. |
+| `frontend/src/components/` | Modular UI components: `ForecastChart` (dual curves), `ErrorChart` (diverging error bars), `MetricCard` (KPI cards), `Navbar` (status header), `FilterBar` (controls), and `VintageModal` (audit inspector). |
+| `frontend/src/pages/` | Page views: `OverviewPage` (briefing & KPIs), `ForecastsPage` (chronological timeline), `AccuracyPage` (distribution & observation table), and `MethodologyPage` (market rules). |
+| `frontend/src/services/api.ts` | Frontend client communicating with the backend REST API, utilizing `VITE_API_BASE_URL`. |
+| `frontend/src/types/index.ts` | TypeScript interface definitions mirroring backend API schemas. |
+| `frontend/src/index.css` | Bespoke vanilla CSS trading dashboard design system with dark mode aesthetics and responsive layout. |
+| `frontend/vercel.json` | Vercel deployment rewrite rules mapping all paths to `index.html` to support client-side routing. |
+| `frontend/Dockerfile` & `nginx.conf` | Multi-stage build compiling TypeScript/Vite into static assets served via Nginx. |
+| **`docs/screenshots/`** | Visual screenshots demonstrating each page and modal of the platform. |
+| **`docker-compose.yml`** | Multi-container Docker configuration launching both frontend (port 3000) and backend (port 8000) seamlessly. |
+| **`start.bat`** | Windows batch script to launch both the FastAPI backend and Vite frontend concurrently in separate terminal windows. |
+| **`test.bat`** | Windows batch script to execute backend pytest suites with one click. |
+| **`.env.example`** | Example environment variable file documenting required and optional configuration keys. |
+| **`README.md`** | Comprehensive system documentation, architectural overview, data rules, and instructions. |
+
 ---
 
-## 9. Local Installation & Startup
+## 10. How to Start the Application
+
+You can start the platform locally using any of the three methods below:
 
 ### Prerequisites
-- Python 3.11+ (Python 3.12 or 3.13 recommended)
-- Node.js v20+ and npm
-- Git
+- **Python**: 3.11+ (Python 3.12 or 3.13 recommended)
+- **Node.js**: v20+ and **npm**
+- **Git**
+- *(Optional)* **Docker & Docker Compose** (for containerized execution)
 
-### 1. Backend Setup
+---
+
+### Method 1: One-Click Startup (Windows)
+For convenience on Windows systems, execute the provided batch script in the root directory:
+```bash
+.\start.bat
+```
+This automatically launches:
+- The FastAPI backend on `http://127.0.0.1:8000`
+- The React frontend dashboard on `http://127.0.0.1:5173`
+
+---
+
+### Method 2: Manual Local Startup (Step-by-Step)
+
+#### Step 1: Start Backend Service
 ```bash
 cd backend
+
+# Create and activate virtual environment:
 python -m venv .venv
 
 # On Windows:
@@ -251,41 +327,60 @@ python -m venv .venv
 # On Linux / macOS:
 source .venv/bin/activate
 
+# Install dependencies:
 pip install -r requirements.txt
+
+# Start backend server:
 uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
-The backend API is now running at `http://127.0.0.1:8000`.  
-Interactive Swagger docs: `http://127.0.0.1:8000/docs`.
+- **Backend API Running:** `http://127.0.0.1:8000`
+- **Interactive Swagger Docs:** `http://127.0.0.1:8000/docs`
 
-### 2. Frontend Setup
+#### Step 2: Start Frontend Application
+In a new terminal window:
 ```bash
 cd frontend
+
+# Install Node dependencies:
 npm install
+
+# Start Vite development server:
 npm run dev
 ```
-The React frontend dashboard is now running at `http://127.0.0.1:5173`.
+- **React Frontend Dashboard Running:** `http://127.0.0.1:5173`
 
 ---
 
-## 10. Docker Setup
+### Method 3: Containerized Startup with Docker Compose
 
-To launch the full production stack using Docker Compose:
+To launch the full production container stack:
 
 ```bash
 # Build and start all containers in detached mode:
 docker compose up --build -d
 
-# Verify container health:
+# Verify container status:
 docker compose ps
 ```
-
-- **Frontend Dashboard:** `http://localhost:3000`
-- **Backend API:** `http://localhost:8000`
+- **Frontend Container:** `http://localhost:3000`
+- **Backend API Container:** `http://localhost:8000`
 - **Swagger Documentation:** `http://localhost:8000/docs`
 
-To stop the containers:
+To stop and remove containers:
 ```bash
 docker compose down
+```
+
+---
+
+### Verification & Health Check
+Once running, verify the backend connection:
+```bash
+curl http://127.0.0.1:8000/api/health
+```
+Expected response:
+```json
+{"status":"healthy","service":"WindSight Analytics","elexon_upstream":"connected"}
 ```
 
 ---
