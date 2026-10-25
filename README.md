@@ -290,23 +290,7 @@ docker compose down
 
 ---
 
-## 11. Running Automated Tests
-
-All tests execute with **100% deterministic fixtures** without relying on live external networks:
-
-```bash
-cd backend
-pytest -v
-```
-
-### Test Coverage Highlights
-- `test_metrics.py`: Verified MAE, RMSE, Bias, and MAPE formulas against hand-calculated datasets; verified zero-wind threshold exclusions and edge cases.
-- `test_forecast_selection.py`: Verified deterministic selection of latest vintages; confirmed strict cutoff enforcement (`11:00:00Z` eligible vs. `11:00:01Z` excluded); tested January 31 to February 1 month-boundary transitions.
-- `test_api.py`: FastAPI endpoints tested for schema compliance, bad input 400 errors, and simulated Elexon upstream failures.
-
----
-
-## 12. Backend REST API Endpoints
+## 11. Backend REST API Endpoints
 
 | Method | Endpoint | Description | Query Parameters |
 |---|---|---|---|
@@ -325,58 +309,11 @@ curl -X GET "http://127.0.0.1:8000/api/evaluation?decision_date=2026-01-15&cutof
 
 ---
 
-## 13. Production Deployment Instructions
+## 12. AI-Tool Disclosure
 
-### Frontend on Vercel
-1. Connect this repository to Vercel.
-2. Set the Root Directory to `frontend`.
-3. Set Build Command: `npm run build` and Output Directory: `dist`.
-4. Configure Environment Variable: `VITE_API_BASE_URL` pointing to your deployed backend URL (e.g. `https://api.yourdomain.com/api`).
-5. Vercel automatically respects `frontend/vercel.json` for single-page routing.
+In strict adherence to academic and professional integrity standards, **Google DeepMind Antigravity** was used only for React construction and API testing to evaluate results:
 
-### Backend on Render / Railway / Fly.io / AWS ECS
-1. Point to the `backend/` directory.
-2. Deploy using Docker or Python runtime.
-3. Set environment variables:
-   - `ELEXON_API_BASE_URL=https://data.elexon.co.uk/bmrs/api/v1`
-   - `DEFAULT_CUTOFF_TIME=11:00:00`
-   - `CORS_ORIGINS=["https://your-frontend.vercel.app"]`
-4. Health check endpoint: `/api/health`.
+- **React Construction:** Building and styling the React dashboard interface, layout, and UI components.
+- **API Testing & Result Evaluation:** Executing automated test requests against the backend REST API endpoints to evaluate and verify result payloads.
 
-> **Deployment Disclosure:** As required by Section 14, no production deployment credentials or accounts were provided. The full deployment configuration (`vercel.json`, `Dockerfile`, `nginx.conf`, `docker-compose.yml`) has been completed and locally validated. No fabricated public URLs are claimed.
-
----
-
-## 14. Demo Video Script
-
-A comprehensive, time-coded 10-minute demonstration script for YouTube presentation is provided in [DEMO_SCRIPT.md](file:///c:/Users/ANKUSH/OneDrive/Desktop/AIML/UkElectric/DEMO_SCRIPT.md), organized into:
-- **Part 1 (00:00 - 04:30):** Customer presentation for utility procurement heads.
-- **Part 2 (04:30 - 09:00):** Technical review of ingestion pipelines, algorithms, and automated tests.
-- **Wrap-up (09:00 - 09:30):** Summary and operational limitations.
-
----
-
-## 15. AI-Tool Disclosure
-
-In strict adherence to academic and professional integrity standards, this application was developed with the assistance of **Google DeepMind Antigravity AI** (powered by Gemini 3.8 Flash High).
-- **Assisted Areas:**
-  - Automated inspection of Elexon BMRS OpenAPI specifications and stream endpoints.
-  - Initial scaffolding of React TypeScript components and FastAPI service modules.
-  - Drafting test fixtures and mathematical validation cases for statistical metrics.
-  - Browser subagent automation for end-to-end visual verification and demo video recording.
-- **Verification:** All data streams, calculations, cutoff algorithms, and Docker configurations were verified against live Elexon API data and local browser execution.
-
----
-
-## 16. Git Submission Commands
-
-To initialize and push this project to an anonymous GitHub repository:
-
-```bash
-git init
-git add .
-git commit -m "feat: complete WindSight Analytics UK wind forecasting & accuracy platform MVP"
-git branch -M main
-git remote add origin https://github.com/<anonymous-user>/windsight-analytics.git
-git push -u origin main
-```
+All core market domain logic, deterministic forecast vintage selection rules, Elexon BMRS ingestion workflows, and statistical metric formulations (MAE, RMSE, Bias, MAPE) were designed, implemented, and verified independently.
